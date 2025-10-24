@@ -2,11 +2,19 @@
 ![Minimum Supported Rust Version](https://img.shields.io/badge/nightly-1.92+-ab6000.svg)
 [<img alt="crates.io" src="https://img.shields.io/crates/v/math_tools.svg?color=fc8d62&logo=rust" height="20" style=flat-square>](https://crates.io/crates/math_tools)
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs&style=flat-square" height="20">](https://docs.rs/math_tools)
-![Lines Of Code](https://img.shields.io/badge/LoC-114-lightblue)
+![Lines Of Code](https://img.shields.io/badge/LoC-505-lightblue)
 <br>
 [<img alt="ci errors" src="https://img.shields.io/github/actions/workflow/status/valeratrades/math_tools/errors.yml?branch=master&style=for-the-badge&style=flat-square&label=errors&labelColor=420d09" height="20">](https://github.com/valeratrades/math_tools/actions?query=branch%3Amaster) <!--NB: Won't find it if repo is private-->
 [<img alt="ci warnings" src="https://img.shields.io/github/actions/workflow/status/valeratrades/math_tools/warnings.yml?branch=master&style=for-the-badge&style=flat-square&label=warnings&labelColor=d16002" height="20">](https://github.com/valeratrades/math_tools/actions?query=branch%3Amaster) <!--NB: Won't find it if repo is private-->
 
+collection of tools to help me solve math
+
+## Usage
+## polynomial
+degrees are automatically inferred from largest provided letter, so to solve eg `4x^3 - 10 = 0`, you'd do:
+```sh
+math_tools polynomial -a 4 -d "-10"
+```
 
 
 
