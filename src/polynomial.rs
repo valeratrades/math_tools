@@ -235,14 +235,17 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Result<()> {
 		let x3 = m * (theta - 4.0 * std::f64::consts::PI / 3.0).cos() + offset;
 
 		println!("Three distinct real roots:");
-		println!("  x1 = {x1}");
-		println!("  x2 = {x2}");
-		println!("  x3 = {x3}");
+		println!("  x ≈ {{{x1}, {x2}, {x3}}}");
 	} else if discriminant.abs() < f64::EPSILON {
 		// Multiple roots
 		if p.abs() < f64::EPSILON {
 			// Triple root at offset
-			println!("Triple root: x = {offset}");
+			let offset_int = is_near_integer(offset);
+			if let Some(val) = offset_int {
+				println!("Triple root: x = {val}");
+			} else {
+				println!("Triple root: x = {offset}");
+			}
 		} else {
 			let x1 = 3.0 * q / p + offset;
 			let x2 = -3.0 * q / (2.0 * p) + offset;
@@ -253,6 +256,38 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Result<()> {
 		}
 	} else {
 		// One real root and two complex conjugate roots
+		// Check for special case: x^3 = n (pure cube root)
+		if b.abs() < f64::EPSILON && c.abs() < f64::EPSILON {
+			let n = -d / a;
+			let n_int = is_near_integer(n);
+
+			if let Some(n_val) = n_int {
+				// Check if it's a perfect cube
+				let cbrt_n = (n_val.abs() as f64).cbrt().round() as i64;
+				if cbrt_n * cbrt_n * cbrt_n == n_val.abs() {
+					let sign = if n_val < 0 { -1 } else { 1 };
+					let root = sign * cbrt_n;
+					println!("One real root:");
+					println!("  x = {root}");
+					println!("Two complex conjugate roots:");
+					println!("  (complex cube roots of {n_val})");
+					return Ok(());
+				} else {
+					// Not a perfect cube but integer argument
+					println!("One real root:");
+					if n_val >= 0 {
+						println!("  x = cbrt({n_val})");
+					} else {
+						println!("  x = -cbrt({})", -n_val);
+					}
+					println!("  x ≈ {}", n.cbrt());
+					println!("Two complex conjugate roots:");
+					println!("  (complex cube roots of {n_val})");
+					return Ok(());
+				}
+			}
+		}
+
 		let sqrt_disc = (-discriminant).sqrt();
 		let u = ((-q + sqrt_disc / (3.0 * 3_f64.sqrt())) / 2.0).cbrt();
 		let v = ((-q - sqrt_disc / (3.0 * 3_f64.sqrt())) / 2.0).cbrt();
@@ -263,10 +298,9 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> Result<()> {
 		let imag = (u - v) * 3_f64.sqrt() / 2.0;
 
 		println!("One real root:");
-		println!("  x1 = {x1}");
+		println!("  x ≈ {x1}");
 		println!("Two complex conjugate roots:");
-		println!("  x2 = {real} + {imag}i");
-		println!("  x3 = {real} - {imag}i");
+		println!("  x ≈ {real} ± {imag}i");
 	}
 
 	Ok(())
@@ -293,6 +327,35 @@ fn solve_quartic(a: f64, b: f64, c: f64, d: f64, e: f64) -> Result<()> {
 
 	if q.abs() < f64::EPSILON {
 		// Biquadratic case: y^4 + py^2 + r = 0
+		// Check for special case: x^4 = n (pure fourth root)
+		if b.abs() < f64::EPSILON && c.abs() < f64::EPSILON && d.abs() < f64::EPSILON {
+			let n = -e / a;
+			let n_int = is_near_integer(n);
+
+			if let Some(n_val) = n_int {
+				if n_val > 0 {
+					// Check if fourth root is an integer
+					let fourth_root = (n_val as f64).sqrt().sqrt().round() as i64;
+					if fourth_root * fourth_root * fourth_root * fourth_root == n_val {
+						println!("Four roots:");
+						println!("  x ∈ {{{fourth_root}, -{fourth_root}}}  (real)");
+						println!("  x ∈ {{{fourth_root}i, -{fourth_root}i}}  (imaginary)");
+						return Ok(());
+					} else {
+						println!("Four roots:");
+						println!("  x = ±sqrt(sqrt({n_val}))  (real)");
+						println!("  x = ±i*sqrt(sqrt({n_val}))  (imaginary)");
+						println!("  x ≈ ±{}, ±{}i", n.sqrt().sqrt(), n.sqrt().sqrt());
+						return Ok(());
+					}
+				} else if n_val < 0 {
+					println!("Four complex roots:");
+					println!("  (fourth roots of {n_val})");
+					return Ok(());
+				}
+			}
+		}
+
 		// Substitute z = y^2
 		let discriminant = p * p - 4.0 * r;
 		if discriminant < 0.0 {
@@ -305,11 +368,21 @@ fn solve_quartic(a: f64, b: f64, c: f64, d: f64, e: f64) -> Result<()> {
 		let z2 = (-p - discriminant.sqrt()) / 2.0;
 
 		let mut roots = Vec::new();
+		let mut exact_strs = Vec::new();
 
 		if z1 > 0.0 {
 			let sqrt_z1 = z1.sqrt();
 			roots.push(sqrt_z1 + offset);
 			roots.push(-sqrt_z1 + offset);
+
+			// Try to format exactly if z1 is a perfect square
+			if let Some(z1_int) = is_near_integer(z1) {
+				let sqrt_z1_int = (z1_int as f64).sqrt().round() as i64;
+				if sqrt_z1_int * sqrt_z1_int == z1_int {
+					exact_strs.push(format!("{}", sqrt_z1_int));
+					exact_strs.push(format!("-{}", sqrt_z1_int));
+				}
+			}
 		}
 		if z2 > 0.0 {
 			let sqrt_z2 = z2.sqrt();
@@ -320,9 +393,26 @@ fn solve_quartic(a: f64, b: f64, c: f64, d: f64, e: f64) -> Result<()> {
 		if roots.is_empty() {
 			println!("Four complex roots");
 		} else {
-			println!("Real roots:");
-			for (i, root) in roots.iter().enumerate() {
-				println!("  x{} = {}", i + 1, root);
+			if !exact_strs.is_empty() && exact_strs.len() == roots.len() {
+				println!("Real roots:");
+				print!("  x ∈ {{");
+				for (i, s) in exact_strs.iter().enumerate() {
+					if i > 0 {
+						print!(", ");
+					}
+					print!("{s}");
+				}
+				println!("}}");
+			} else {
+				println!("Real roots:");
+				print!("  x ≈ {{");
+				for (i, root) in roots.iter().enumerate() {
+					if i > 0 {
+						print!(", ");
+					}
+					print!("{root}");
+				}
+				println!("}}");
 			}
 		}
 
