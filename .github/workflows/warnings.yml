@@ -93,9 +93,9 @@ jobs:
     - name: Check Rust comments
       run: "\t\t\t\t\t\tcomments=$(jq '.Rust.comments' tokei_output.json)\n\t\t\t\t\
         \t\tcode=$(jq '.Rust.code' tokei_output.json)\n\t\t\t\t\t\tif [ $((comments\
-        \ * 10)) -ge $code ]; then\n\t\t\t\t\t\t\techo \"Number of comments should\
-        \ be less than 10% of code\"\n\t\t\t\t\t\t\texit 1\n\t\t\t\t\t\telse\n\t\t\
-        \t\t\t\t\techo \"Check passed: Number of comments is less than 10% of code\"\
+        \ * 15)) -ge $code ]; then\n\t\t\t\t\t\t\techo \"Number of comments should\
+        \ be less than 15% of code\"\n\t\t\t\t\t\t\texit 1\n\t\t\t\t\t\telse\n\t\t\
+        \t\t\t\t\techo \"Check passed: Number of comments is less than 15% of code\"\
         \n\t\t\t\t\t\tfi\n\t\t\t"
 name: Warnings
 'on':

@@ -295,6 +295,7 @@ fn solve_numerical(coeffs: &[f64], degree: usize) -> Result<()> {
 			let mut denom_re = 1.0;
 			let mut denom_im = 0.0;
 
+			#[allow(clippy::needless_range_loop)] // we actually do need both `i` and `j` here
 			for j in 0..degree {
 				if i != j {
 					let (xj, yj) = roots[j];
@@ -309,7 +310,6 @@ fn solve_numerical(coeffs: &[f64], degree: usize) -> Result<()> {
 				}
 			}
 
-			// Divide: (p_val_re + p_val_im*i) / (denom_re + denom_im*i)
 			let denom_mag_sq = denom_re * denom_re + denom_im * denom_im;
 			if denom_mag_sq < f64::EPSILON {
 				continue;
