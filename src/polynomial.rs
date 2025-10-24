@@ -92,12 +92,10 @@ fn format_exact_quadratic(b: f64, discriminant: f64, a: f64, plus: bool) -> Stri
 				} else {
 					return format!("{}sqrt({})/{}", if plus { "" } else { "-" }, sqrt_inside, den);
 				}
+			} else if den == 1 {
+				return format!("{}{}*sqrt({})", if plus { "" } else { "-" }, sqrt_num, sqrt_inside);
 			} else {
-				if den == 1 {
-					return format!("{}{}*sqrt({})", if plus { "" } else { "-" }, sqrt_num, sqrt_inside);
-				} else {
-					return format!("{}{}*sqrt({})/{}", if plus { "" } else { "-" }, sqrt_num, sqrt_inside, den);
-				}
+				return format!("{}{}*sqrt({})/{}", if plus { "" } else { "-" }, sqrt_num, sqrt_inside, den);
 			}
 		} else {
 			// Both constant and square root part
@@ -392,28 +390,26 @@ fn solve_quartic(a: f64, b: f64, c: f64, d: f64, e: f64) -> Result<()> {
 
 		if roots.is_empty() {
 			println!("Four complex roots");
-		} else {
-			if !exact_strs.is_empty() && exact_strs.len() == roots.len() {
-				println!("Real roots:");
-				print!("  x ∈ {{");
-				for (i, s) in exact_strs.iter().enumerate() {
-					if i > 0 {
-						print!(", ");
-					}
-					print!("{s}");
+		} else if !exact_strs.is_empty() && exact_strs.len() == roots.len() {
+			println!("Real roots:");
+			print!("  x ∈ {{");
+			for (i, s) in exact_strs.iter().enumerate() {
+				if i > 0 {
+					print!(", ");
 				}
-				println!("}}");
-			} else {
-				println!("Real roots:");
-				print!("  x ≈ {{");
-				for (i, root) in roots.iter().enumerate() {
-					if i > 0 {
-						print!(", ");
-					}
-					print!("{root}");
-				}
-				println!("}}");
+				print!("{s}");
 			}
+			println!("}}");
+		} else {
+			println!("Real roots:");
+			print!("  x ≈ {{");
+			for (i, root) in roots.iter().enumerate() {
+				if i > 0 {
+					print!(", ");
+				}
+				print!("{root}");
+			}
+			println!("}}");
 		}
 
 		return Ok(());
