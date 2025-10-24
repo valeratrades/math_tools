@@ -1,5 +1,130 @@
 use color_eyre::eyre::{Result, bail};
 
+/// Helper to simplify a fraction by finding GCD
+fn gcd(mut a: i64, mut b: i64) -> i64 {
+	a = a.abs();
+	b = b.abs();
+	while b != 0 {
+		let t = b;
+		b = a % b;
+		a = t;
+	}
+	a
+}
+
+/// Helper to check if a number is close to an integer
+fn is_near_integer(x: f64) -> Option<i64> {
+	let rounded = x.round();
+	if (x - rounded).abs() < 1e-9 { Some(rounded as i64) } else { None }
+}
+
+/// Helper to simplify sqrt(n) = a*sqrt(b) where b is square-free
+fn simplify_sqrt(n: f64) -> (i64, i64) {
+	if n < 0.0 {
+		return (0, 0);
+	}
+
+	let n_int = n.round() as i64;
+	if (n - n_int as f64).abs() > 1e-9 {
+		// Not an integer, can't simplify nicely
+		return (1, n_int);
+	}
+
+	let mut outside = 1i64;
+	let mut inside = n_int;
+
+	let mut i = 2i64;
+	while i * i <= inside {
+		while inside % (i * i) == 0 {
+			outside *= i;
+			inside /= i * i;
+		}
+		i += 1;
+	}
+
+	(outside, inside)
+}
+
+/// Format an exact quadratic solution
+fn format_exact_quadratic(b: f64, discriminant: f64, a: f64, plus: bool) -> String {
+	// Check if coefficients are near integers
+	let b_int = is_near_integer(b);
+	let a_int = is_near_integer(a);
+	let disc_int = is_near_integer(discriminant);
+
+	if let (Some(b), Some(a), Some(disc)) = (b_int, a_int, disc_int) {
+		if disc < 0 {
+			return String::new(); // Complex, handled elsewhere
+		}
+
+		let (sqrt_coef, sqrt_inside) = simplify_sqrt(disc as f64);
+
+		// Check if it's a perfect square
+		if sqrt_inside == 1 {
+			let numerator = if plus { -b + sqrt_coef } else { -b - sqrt_coef };
+			let denominator = 2 * a;
+			let g = gcd(numerator, denominator);
+			let num = numerator / g;
+			let den = denominator / g;
+
+			if den == 1 {
+				return format!("{}", num);
+			} else {
+				return format!("{}/{}", num, den);
+			}
+		}
+
+		// Format with square root
+		let sign = if plus { "+" } else { "-" };
+		let numerator_const = -b;
+		let denominator = 2 * a;
+
+		// Try to simplify the fraction
+		if numerator_const == 0 {
+			// Just the square root part
+			let g = gcd(sqrt_coef, denominator);
+			let sqrt_num = sqrt_coef / g;
+			let den = denominator / g;
+
+			if sqrt_num == 1 {
+				if den == 1 {
+					return format!("{}sqrt({})", if plus { "" } else { "-" }, sqrt_inside);
+				} else {
+					return format!("{}sqrt({})/{}", if plus { "" } else { "-" }, sqrt_inside, den);
+				}
+			} else {
+				if den == 1 {
+					return format!("{}{}*sqrt({})", if plus { "" } else { "-" }, sqrt_num, sqrt_inside);
+				} else {
+					return format!("{}{}*sqrt({})/{}", if plus { "" } else { "-" }, sqrt_num, sqrt_inside, den);
+				}
+			}
+		} else {
+			// Both constant and square root part
+			let g = gcd(gcd(numerator_const.abs(), sqrt_coef), denominator);
+			let const_num = numerator_const / g;
+			let sqrt_num = sqrt_coef / g;
+			let den = denominator / g;
+
+			let sqrt_str = if sqrt_num == 1 {
+				format!("sqrt({})", sqrt_inside)
+			} else {
+				format!("{}*sqrt({})", sqrt_num, sqrt_inside)
+			};
+
+			let result = if den == 1 {
+				format!("{} {} {}", const_num, sign, sqrt_str)
+			} else {
+				format!("({} {} {})/{}", const_num, sign, sqrt_str, den)
+			};
+
+			return result;
+		}
+	}
+
+	String::new()
+}
+
 /// Main entry point for solving polynomial equations of any degree
 pub fn solve_polynomial(coeffs: &[f64]) -> Result<()> {
 	let degree = coeffs.len() - 1;
@@ -68,9 +193,20 @@ pub fn solve_quadratic(a: f64, b: f64, c: f64) -> Result<()> {
 		let sqrt_discriminant = discriminant.sqrt();
 		let x1 = (-b + sqrt_discriminant) / (2.0 * a);
 		let x2 = (-b - sqrt_discriminant) / (2.0 * a);
-		println!("Two distinct roots:");
-		println!("  x1 = {x1}");
-		println!("  x2 = {x2}");
+
+		// Try to format exact solutions
+		let exact1 = format_exact_quadratic(b, discriminant, a, true);
+		let exact2 = format_exact_quadratic(b, discriminant, a, false);
+
+		if !exact1.is_empty() && !exact2.is_empty() {
+			println!("Two distinct roots:");
+			println!("  x ∈ {{{}, {}}}", exact1, exact2);
+			println!("  ≈ {{{}, {}}}", x1, x2);
+		} else {
+			println!("Two distinct roots:");
+			println!("  x1 = {x1}");
+			println!("  x2 = {x2}");
+		}
 	}
 	Ok(())
 }
