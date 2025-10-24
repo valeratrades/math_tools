@@ -151,5 +151,5 @@ fn print_polynomial(coeffs: &[f64], n: usize) {
 		print!("0");
 	}
 
-	println!(" = 0");
+	println!(" = 0\n");
 }
