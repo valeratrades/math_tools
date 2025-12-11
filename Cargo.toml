@@ -8,6 +8,7 @@ edition = "2024"
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [dependencies]
+autodiff = { version = "0.7.0" }
 clap = { version = "4.5.48", features = ["derive"] }
 color-eyre = "^0.6.3"
 derive-new = "^0"

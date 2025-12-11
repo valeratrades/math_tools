@@ -1,3 +1,4 @@
+use autodiff::{F, FT, Float};
 use color_eyre::eyre::{Result, bail};
 
 /// Helper to simplify a fraction by finding GCD
@@ -460,15 +461,20 @@ fn solve_quartic(a: f64, b: f64, c: f64, d: f64, e: f64) -> Result<()> {
 	Ok(())
 }
 
-/// Find one real root of a cubic equation using Newton-Raphson method
+/// Find one real root of a cubic equation using Newton-Raphson method with autodiff
 fn find_cubic_root(a: f64, b: f64, c: f64, d: f64) -> f64 {
 	// Start with an initial guess
 	let mut x = 1.0;
 
-	// Newton-Raphson iteration
+	// Newton-Raphson iteration using autodiff for derivatives
 	for _ in 0..100 {
-		let f = a * x * x * x + b * x * x + c * x + d;
-		let f_prime = 3.0 * a * x * x + 2.0 * b * x + c;
+		// Create dual number: x as variable (derivative = 1)
+		let xd = F::var(x);
+		// Evaluate cubic polynomial: a*x^3 + b*x^2 + c*x + d
+		// Using autodiff, the derivative is computed automatically
+		let result: FT<f64> = xd.powi(3) * a + xd.powi(2) * b + xd * c + d;
+		let f = result.x;
+		let f_prime = result.dx;
 
 		if f_prime.abs() < f64::EPSILON {
 			break;
@@ -476,7 +482,7 @@ fn find_cubic_root(a: f64, b: f64, c: f64, d: f64) -> f64 {
 
 		let x_new = x - f / f_prime;
 
-		if (x_new - x).abs() < 1e-10 {
+		if (x_new - x).abs() < 1e-10_f64 {
 			return x_new;
 		}
 
@@ -609,4 +615,55 @@ fn complex_power(x: f64, y: f64, n: usize) -> (f64, f64) {
 	}
 
 	(result_re, result_im)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_autodiff_derivatives() {
+		// f(x) = x^3: at x=2, f=8, f'=12
+		let x = F::var(2.0);
+		let result: FT<f64> = x.powi(3);
+		assert!((result.x - 8.0).abs() < 1e-10);
+		assert!((result.dx - 12.0).abs() < 1e-10);
+
+		// f(x) = 2x^3 - 3x^2 + 4x - 5: at x=1, f=-2, f'=4
+		let x = F::var(1.0);
+		let result: FT<f64> = x.powi(3) * 2.0 + x.powi(2) * (-3.0) + x * 4.0 + (-5.0);
+		assert!((result.x - (-2.0)).abs() < 1e-10);
+		assert!((result.dx - 4.0).abs() < 1e-10);
+
+		// Verify autodiff matches manual derivative at multiple points
+		let (a, b, c, d) = (1.0, -6.0, 11.0, -6.0);
+		for x_val in [0.0, 1.5, 3.0] {
+			let x = F::var(x_val);
+			let result: FT<f64> = x.powi(3) * a + x.powi(2) * b + x * c + d;
+			let manual_deriv = 3.0 * a * x_val * x_val + 2.0 * b * x_val + c;
+			assert!((result.dx - manual_deriv).abs() < 1e-10);
+		}
+	}
+
+	#[test]
+	fn test_newton_raphson_with_autodiff() {
+		// Trace one iteration for x^3 - 2 = 0 starting at x=1
+		let x = F::var(1.0);
+		let result: FT<f64> = x.powi(3) - 2.0;
+		// f(1) = -1, f'(1) = 3
+		assert!((result.x - (-1.0)).abs() < 1e-10);
+		assert!((result.dx - 3.0).abs() < 1e-10);
+		// Newton step: x1 = 1 - (-1)/3 = 4/3
+		let x1 = 1.0 - result.x / result.dx;
+		assert!((x1 - 4.0 / 3.0).abs() < 1e-10);
+
+		// Verify find_cubic_root converges to cbrt(2)
+		let root = find_cubic_root(1.0, 0.0, 0.0, -2.0);
+		assert!((root - 2.0_f64.cbrt()).abs() < 1e-8);
+
+		// Verify it finds a root of (x-1)(x-2)(x-3)
+		let root = find_cubic_root(1.0, -6.0, 11.0, -6.0);
+		let f_at_root = root.powi(3) - 6.0 * root.powi(2) + 11.0 * root - 6.0;
+		assert!(f_at_root.abs() < 1e-8);
+	}
 }
