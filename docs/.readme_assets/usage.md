@@ -14,4 +14,4 @@ Two complex conjugate roots:
   x ≈ -0.6786044041487267 ± 1.1753773062255988i
 ```
 
-For more examples, look at [integration tests](../tests/integration/polynomial_tests.rs)
+For more examples, look at [integration tests](../../tests/integration/polynomial_tests.rs)
